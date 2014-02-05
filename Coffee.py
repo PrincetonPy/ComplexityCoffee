@@ -85,7 +85,18 @@
 # 
 # **Computing an Average Sampling Rate**
 # 
-# - 
+# - If you plot time on the y axis ( just against indices ), and on the same plot, have a straight line of gradient 1, you'll note that most of our time measurements ( the times at which we took measurements ) exist under this line. That means that the derivative of the time curve is less than one. Its reciprocal is the sampling rate - the number of measurements taken per unit time.
+# - Calculate this sampling rate by using `scipy.stats.linregress` to perform a linear regression. Catch the gradient and intercept, and plot it on top of the time plot, so we can visually check the fit. Also catch the $R^2$, standard error, and the p-value of the regression. 
+# - Command : `gradient, intercept, r2, pval, stderr = stats.linregress(indices, time)`
+# 
+# **Regularisation of the Sampling**
+# 
+# - Irregular sampling is not fun. The series is fairly well-behaved, so we can interpolate over it fairly comfortably.
+# - Use `scipy.interpolate.interp1d(x, y)` to create an interpolant. You can then pass an array of times that you want the interpolated values at. Create a variable `coffees_interp` that is the interpolation over the regularly-spaced time vector `t_interp`, and plot them on top of the normal t vs coffees to ensure that the interpolation was correct.
+# 
+# **Daily Average Over the Week**
+# 
+# - Using your shiny new regularly-spaced coffee consumption time series, compute the average number of coffees devoured on each day of the week. Plot it with `plt.errorbar` and approximate 95% confidence intervals from the standard error of the mean using `scipy.stats.sem`.
 
 # <codecell>
 
@@ -253,5 +264,34 @@ plt.ylabel("Number of coffees devoured")
 
 # <codecell>
 
-# Now that we have a uniformly-sampled time series, 
+# Now that we have a uniformly-sampled time series, we can start to look at regularities during the week.
+# Let's compute the average number of coffees for each day of the week. First, let's look at the series itself.
+plt.plot(np.diff(regular_coffees))
+
+# <codecell>
+
+# So we see a few issues. Firstly, the constants are due to interpolating over missing data. 
+# We could be clever about it, by reinterpolating after inserting a zero-change point just after long breaks,
+# but in the interest of time, we'll just skip them for now. Let's start at 210, and finish at 420.
+# The big dip is due to people being away. The time series started in October, which puts the dip
+# squarely in the summer.
+
+# So, let's compute that average.
+
+# Declare empty arrays
+weekly_average = np.zeros(7)
+weekly_stderr = np.zeros(7)
+
+# Iterating over each day of the week
+for i in range(7) :
+    weekly_average[i] = np.mean(np.diff(regular_coffees[210:420])[i::7])
+    weekly_stderr[i] = stats.sem(np.diff(regular_coffees[210:420])[i::7])
+    
+# Plot with approximate 95% CI
+plt.errorbar(range(7), weekly_average, yerr=weekly_stderr * 1.96, linewidth=3)
+
+# <codecell>
+
+# If you got this far in an hour, well done.
+# You probably work as hard as Warwick Complexity, whose caffeine consumption doesn't drop to zero over the weekends...
 
